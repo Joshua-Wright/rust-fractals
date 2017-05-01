@@ -1,0 +1,19 @@
+[package]
+name = "rust-image-stuff"
+version = "0.1.0"
+authors = ["Josh Wright <madewithlinux.josh@gmail.com>"]
+
+[dependencies]
+# image = "0.12.4"
+imagefmt = "4.0.0"
+palette = "0.2"
+num = "*"
+itertools = "0.6.0"
+# simd = "0.2.0"
+# simdty = "0.0.6"
+x86intrin = "0.4.2"
+
+# [dependencies.x86intrin]
+# version = "0.4.2"
+# default-features = false
+# features = ["avx", "sse3"]
