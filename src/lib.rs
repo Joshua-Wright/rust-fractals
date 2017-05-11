@@ -55,16 +55,30 @@ mod tests {
 
     #[bench]
     fn bench_log10(b: &mut Bencher) {
-        b.iter(|| { black_box((0..1000).map(|x| x as f32).fold(0f32, |old, new| 
-            transform10(old, new)));
-        });
+        b.iter(|| {
+            let n = black_box(100);
+            let mut sum = 0f32;
+            for z in (40..(10*n)).map(|x| (x as f32)/10f32) {
+                for c in (4..n).map(|x| x as f32) {
+                    sum += transform10(z,c);
+                }
+            }
+            sum
+        })
     }
 
     #[bench]
     fn bench_log2(b: &mut Bencher) {
-        b.iter(|| { black_box((0..1000).map(|x| x as f32).fold(0f32, |old, new|
-            transform2(old, new)));
-        });
+        b.iter(|| {
+            let n = black_box(100);
+            let mut sum = 0f32;
+            for z in (40..(10*n)).map(|x| (x as f32)/10f32) {
+                for c in (4..n).map(|x| x as f32) {
+                    sum += transform2(z,c);
+                }
+            }
+            sum
+        })
     }
 
     #[test]
