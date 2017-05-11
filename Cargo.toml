@@ -12,18 +12,8 @@ x86intrin = "0.4.2"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
+# docopt = "0.7"
+# docopt_macros = "0.7"
+# rustc-serialize = "0.3"
+clap = {version = "~2.19.0", features = ["yaml"]}
 
-# [dependencies.x86intrin]
-# version = "0.4.2"
-# default-features = false
-# features = ["avx", "sse3"]
-
-
-[lib]
-name = "rust_image_stuff"
-path = "src/lib.rs"
-
-[[bin]]
-name = "rust_image_stuff"
-path = "src/main.rs"
-doc = false

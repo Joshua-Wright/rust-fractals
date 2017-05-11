@@ -9,6 +9,9 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
+#[macro_use]
+extern crate clap;
+use clap::ArgMatches;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct FractalCfg {
@@ -25,6 +28,24 @@ impl Default for FractalCfg {
             max_iterations: 256u32,
             center_r: 0.0, center_i: 0.0,
             zoom: 1.0,
+        }
+    }
+}
+
+pub trait FromMatches {
+    fn from_matches(matches: &ArgMatches) -> Self;
+}
+
+impl FromMatches for FractalCfg {
+    fn from_matches(matches: &ArgMatches) -> FractalCfg {
+        let d = FractalCfg::default();
+        FractalCfg {
+            width: value_t!(matches, "width", u32).unwrap_or(d.width),
+            height: value_t!(matches, "height", u32).unwrap_or(d.height),
+            max_iterations: value_t!(matches, "iter", u32).unwrap_or(d.max_iterations),
+            center_r: value_t!(matches, "r", f64).unwrap_or(d.center_r),
+            center_i: value_t!(matches, "i", f64).unwrap_or(d.center_i),
+            zoom: value_t!(matches, "zoom", f64).unwrap_or(d.zoom),
         }
     }
 }
