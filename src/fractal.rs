@@ -55,54 +55,52 @@ pub fn mandelbrot(
                 (x + 1) as f32,
                 (x + 0) as f32
             );
-            // __m256 my = _mm256_set1_ps(y);
             let my = mm256_set1_ps(y as f32);
-            // __m256 cr = _mm256_add_ps(_mm256_mul_ps(mx, xscale), xmin);
             let cr = mm256_add_ps(mm256_mul_ps(mx, xscale), xmin);
-            // __m256 ci = _mm256_add_ps(_mm256_mul_ps(my, yscale), ymin);
             let ci = mm256_add_ps(mm256_mul_ps(my, yscale), ymin);
-            // __m256 zr = cr;
             let mut zr = cr;
-            // __m256 zi = ci;
             let mut zi = ci;
 
-            // __m256 mk = _mm256_set1_ps(k);
             let mut mk = mm256_set1_ps(1f32);
+            let mut mag2final = mm256_set1_ps(0f32);
             for _ in 0..max_iterations {
                 /* Compute z1 from z0 */
-                // __m256 zr2 = _mm256_mul_ps(zr, zr);
                 let zr2 = mm256_mul_ps(zr, zr);
-                // __m256 zi2 = _mm256_mul_ps(zi, zi);
                 let zi2 = mm256_mul_ps(zi, zi);
-                // __m256 zrzi = _mm256_mul_ps(zr, zi);
                 let zrzi = mm256_mul_ps(zr, zi);
 
                 /* zr1 = zr0 * zr0 - zi0 * zi0 + cr */
                 /* zi1 = zr0 * zi0 + zr0 * zi0 + ci */
-                // zr = _mm256_add_ps(_mm256_sub_ps(zr2, zi2), cr);
                 zr = mm256_add_ps(mm256_sub_ps(zr2, zi2), cr);
-                // zi = _mm256_add_ps(_mm256_add_ps(zrzi, zrzi), ci);
                 zi = mm256_add_ps(mm256_add_ps(zrzi, zrzi), ci);
 
                 /* Increment k */
-                // zr2 = _mm256_mul_ps(zr, zr);
                 let zr2 = mm256_mul_ps(zr, zr);
                 let zi2 = mm256_mul_ps(zi, zi);
-                // __m256 mag2 = _mm256_add_ps(zr2, zi2);
                 let mag2 = mm256_add_ps(zr2, zi2);
-                // __m256 mask = _mm256_cmp_ps(mag2, threshold, _CMP_LT_OS);
                 let mask = mm256_cmp_ps(mag2, threshold, CMP_LT_OS);
-                // mk = _mm256_add_ps(_mm256_and_ps(mask, one), mk);
                 mk = mm256_add_ps(mm256_and_ps(mask, one), mk);
-                
-                if (mm256_testz_ps(mask, mm256_set1_ps(-1f32)) == 1i32) {
+                // save the magnitude at the maximum iteration
+                mag2final = mm256_or_ps(
+                    mm256_and_ps(mask, mag2), 
+                    mm256_andnot_ps(mask, mag2final));
+                // we can't just use the magnitude at the end because 
+                // the cells are iterated even when they're too large
+               
+                if mm256_testz_ps(mask, mm256_set1_ps(-1f32)) == 1i32 {
                     break;
                 }
 
-                let mx_f32x8 = mk.as_f32x8().as_array();
-                for i in 0..8 {
-                    buf[y*height + x + i] = mx_f32x8[i];
-                }
+            }
+
+            let mk = mk.as_f32x8().as_array();
+            let mag2final = mag2final.as_f32x8().as_array();
+            for i in 0..8 {
+                // use final magnitude to smooth out colors
+                let log_zn = mag2final[i].log2()/2f32;
+                let nu = log_zn.log2();
+                let iter = mk[i] + 1f32 - nu;
+                buf[y*height + x + i] = iter;
             }
         }
     }

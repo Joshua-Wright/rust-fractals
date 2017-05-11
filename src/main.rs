@@ -62,7 +62,10 @@ fn main() {
     
     let z = 800;
     let mut buf = vec![0; z*z*3];
-    let buf2 = mandelbrot(z, z,512,0f32,0f32,1f32);
+    // let buf2 = mandelbrot(z, z,512,0f32,0f32,1f32);
+    let buf2 = mandelbrot(z, z,2048,
+        -0.743643887037151f32, 0.131825904205330f32,
+        100f32);
     for idx in 0..(z*z) {
         buf[3*idx + 0] = (buf2[idx]) as u8;
         buf[3*idx + 1] = (buf2[idx]) as u8;
