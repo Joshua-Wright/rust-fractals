@@ -18,6 +18,13 @@ fn calc_width(
 }
 
 
+fn smooth_iter(iter: f32, mag: f32) -> f32 {
+    let log_zn = mag.log2()/2f32;
+    let nu = log_zn.log2();
+    iter + 1f32 - nu
+}
+
+
 pub fn mandelbrot(
         cfg: &FractalCfg        
     ) -> Vec<f32> {
@@ -28,13 +35,13 @@ pub fn mandelbrot(
     let zoom           = cfg.zoom     as f32;
     let max_iterations = cfg.max_iterations;
 
-    let mut buf = vec![0f32;width * height];
+    let mut buf = vec![0f32; width * height];
     
     let (xwidth, ywidth) = calc_width(width, height, zoom);
     let xscale = mm256_set1_ps(xwidth / (width as f32));
     let yscale = mm256_set1_ps(ywidth / (height as f32));
-    let xmin = mm256_set1_ps(center_r - xwidth / 2f32);
-    let ymin = mm256_set1_ps(center_i - ywidth / 2f32);
+    let xmin   = mm256_set1_ps(center_r - xwidth / 2f32);
+    let ymin   = mm256_set1_ps(center_i - ywidth / 2f32);
 
     let threshold = mm256_set1_ps((max_iterations as f32).powi(2));
     let one = mm256_set1_ps(1f32);
@@ -97,11 +104,7 @@ pub fn mandelbrot(
             let mk = mk.as_f32x8().as_array();
             let mag2final = mag2final.as_f32x8().as_array();
             for i in 0..8 {
-                // use final magnitude to smooth out colors
-                let log_zn = mag2final[i].log2()/2f32;
-                let nu = log_zn.log2();
-                let iter = mk[i] + 1f32 - nu;
-                buf[y*height + x + i] = iter;
+                buf[y*height + x + i] = smooth_iter(mk[i], mag2final[i]);
             }
         }
     }

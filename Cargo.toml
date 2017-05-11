@@ -1,5 +1,5 @@
 [package]
-name = "rust-image-stuff"
+name = "rust_image_stuff"
 version = "0.1.0"
 authors = ["Josh Wright <madewithlinux.josh@gmail.com>"]
 
@@ -17,3 +17,13 @@ serde_json = "*"
 # version = "0.4.2"
 # default-features = false
 # features = ["avx", "sse3"]
+
+
+[lib]
+name = "rust_image_stuff"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rust_image_stuff"
+path = "src/main.rs"
+doc = false

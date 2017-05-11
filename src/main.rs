@@ -1,17 +1,17 @@
 // main.rs
+#![crate_name="rust_image_stuff"]
 extern crate rust_image_stuff;
 extern crate imagefmt;
 extern crate palette;
 
 /*
-RUSTFLAGS="-C target-feature=+ssse3" cargo run --release
 RUSTFLAGS="-C target-feature=+avx" cargo run --release
 */
 
 use palette::{Rgb, Hsv, Lch, Hue};
 use palette::pixel::Srgb;
 
-use rust_image_stuff::fractal::mandelbrot;
+use rust_image_stuff::mandelbrot;
 use rust_image_stuff::FractalCfg;
 
 
@@ -23,6 +23,7 @@ fn cmap_lch(x: f64) -> [u8; 3] {
 }
 
 fn cmap_hsv(x: f64) -> [u8; 3] {
+    let x = x / (std::f64::consts::PI*2.0);
     let start_color = Srgb::new(0.0, 1.0, 1.0);
     let hsv_color: palette::Hsv = palette::Rgb::from(start_color).into();
     let c: palette::Rgb = hsv_color.shift_hue(((x*360.0) as f32).into()).into();
@@ -49,6 +50,11 @@ fn cmap_test(cmap: &Fn(f64) -> [u8; 3]) -> (usize, Vec<u8>) {
     (z, buf)
 }
 
+fn sin2(x: f32) -> u8 { 
+    let x = x/(std::f32::consts::PI*2f32);
+    (255f32 * x.sin() * x.sin()) as u8
+}
+
 fn main() {
     println!("Hello, world!");
 
@@ -67,13 +73,24 @@ fn main() {
         zoom: 100.0, ..Default::default()
     };
     let buf2 = mandelbrot(&cfg);
-    for idx in 0..(z*z) {
-        buf[3*idx + 0] = (buf2[idx]) as u8;
-        buf[3*idx + 1] = (buf2[idx]) as u8;
-        buf[3*idx + 2] = (buf2[idx]) as u8;
-    }
-    println!("max {:?}", buf2.iter().cloned().fold(0f32/0f32, f32::max));
-    println!("min {:?}", buf2.iter().cloned().fold(0f32/0f32, f32::min));
+    let buf: Vec<u8> = buf2.iter()
+        .cloned()
+        // .map(sin2)
+        // .flat_map(|x| vec![x; 3])
+        .map(|x| x / 10f32)
+        .flat_map(|x| {
+            let b: [u8; 3] = cmap_hsv(x as f64);
+            // b.into_iter()
+            vec![b[0],b[1],b[2]]
+        }
+        )
+        .collect();
+    println!("max {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::max));
+    println!("min {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::min));
+
+    println!("u8 max {:?}", buf.iter().cloned().max());
+    println!("u8 min {:?}", buf.iter().cloned().min());
     imagefmt::write("test.png", z, z, imagefmt::ColFmt::RGB, &buf, imagefmt::ColType::Auto).unwrap();
 
 }
+

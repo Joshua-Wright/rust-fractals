@@ -1,4 +1,5 @@
 // lib.rs
+#![crate_name="rust_image_stuff"]
 #![feature(test)]
 extern crate test;
 extern crate x86intrin;
@@ -28,7 +29,8 @@ impl Default for FractalCfg {
     }
 }
 
-pub mod fractal;
+mod fractal;
+pub use fractal::mandelbrot;
 
 #[cfg(test)]
 mod tests {
@@ -42,15 +44,13 @@ mod tests {
     fn transform10(mag: f32, mx_f32x8: f32) -> f32 {
         let log_zn = mag.log10()/2f32;
         let nu = (log_zn / 2f32.log10()).log10() / 2f32.log10();
-        let iter = mx_f32x8 + 1f32 - nu;
-        return iter;
+        mx_f32x8 + 1f32 - nu
     }
 
     fn transform2(mag: f32, mx_f32x8: f32) -> f32 {
         let log_zn = mag.log2()/2f32;
         let nu = log_zn.log2();
-        let iter = mx_f32x8 + 1f32 - nu;
-        return iter;
+        mx_f32x8 + 1f32 - nu
     }
 
     #[bench]
