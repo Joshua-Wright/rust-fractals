@@ -3,6 +3,31 @@
 extern crate test;
 extern crate x86intrin;
 
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct FractalCfg {
+    pub width: u32, pub height: u32,
+    pub max_iterations: u32,
+    pub center_r: f64, pub center_i: f64,
+    pub zoom: f64,
+}
+
+impl Default for FractalCfg {
+    fn default() -> FractalCfg {
+        FractalCfg{
+            width: 800u32, height: 800u32,
+            max_iterations: 256u32,
+            center_r: 0.0, center_i: 0.0,
+            zoom: 1.0,
+        }
+    }
+}
+
 pub mod fractal;
 
 #[cfg(test)]

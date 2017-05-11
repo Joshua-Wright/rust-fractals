@@ -8,13 +8,11 @@ RUSTFLAGS="-C target-feature=+ssse3" cargo run --release
 RUSTFLAGS="-C target-feature=+avx" cargo run --release
 */
 
-use std::fs::File;
-use std::path::Path;
-
 use palette::{Rgb, Hsv, Lch, Hue};
 use palette::pixel::Srgb;
 
 use rust_image_stuff::fractal::mandelbrot;
+use rust_image_stuff::FractalCfg;
 
 
 fn cmap_lch(x: f64) -> [u8; 3] {
@@ -63,9 +61,12 @@ fn main() {
     let z = 800;
     let mut buf = vec![0; z*z*3];
     // let buf2 = mandelbrot(z, z,512,0f32,0f32,1f32);
-    let buf2 = mandelbrot(z, z,2048,
-        -0.743643887037151f32, 0.131825904205330f32,
-        100f32);
+    let cfg = FractalCfg{
+        max_iterations: 2048u32,
+        center_r: -0.743643887037151, center_i: 0.131825904205330,
+        zoom: 100.0, ..Default::default()
+    };
+    let buf2 = mandelbrot(&cfg);
     for idx in 0..(z*z) {
         buf[3*idx + 0] = (buf2[idx]) as u8;
         buf[3*idx + 1] = (buf2[idx]) as u8;

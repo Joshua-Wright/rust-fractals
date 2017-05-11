@@ -1,13 +1,6 @@
 // fractal.rs
-
-
-
-use x86intrin::f32x8;
-use x86intrin::m256;
+use FractalCfg;
 use x86intrin::avx::*;
-use x86intrin::avx;
-
-// use std::num::complex::Complex;
 
 
 fn calc_width(
@@ -26,11 +19,15 @@ fn calc_width(
 
 
 pub fn mandelbrot(
-        width: usize, height: usize,
-        max_iterations: usize,
-        center_r: f32, center_i: f32,
-        zoom: f32,
+        cfg: &FractalCfg        
     ) -> Vec<f32> {
+    let width          = cfg.width    as usize;
+    let height         = cfg.height   as usize;
+    let center_r       = cfg.center_r as f32;
+    let center_i       = cfg.center_i as f32;
+    let zoom           = cfg.zoom     as f32;
+    let max_iterations = cfg.max_iterations;
+
     let mut buf = vec![0f32;width * height];
     
     let (xwidth, ywidth) = calc_width(width, height, zoom);
@@ -41,6 +38,10 @@ pub fn mandelbrot(
 
     let threshold = mm256_set1_ps((max_iterations as f32).powi(2));
     let one = mm256_set1_ps(1f32);
+
+    if width % 8 != 0 {
+        panic!("Bad image size! width must be a multiple of 8");
+    }
     
     for y in 0..height {
         for x in (0..(width/8)).map(|x| x*8) {
@@ -106,3 +107,4 @@ pub fn mandelbrot(
     }
     buf
 }
+
