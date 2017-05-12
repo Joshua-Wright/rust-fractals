@@ -21,13 +21,12 @@ fn calc_width(
 fn smooth_iter(iter: f32, mag: f32) -> f32 {
     let log_zn = mag.log2()/2f32;
     let nu = log_zn.log2();
-    iter + 1f32 - nu
+    // (iter + 1f32 - nu).max(0f32)
+    iter - nu + 4f32
 }
 
 
-pub fn mandelbrot(
-        cfg: &FractalCfg        
-    ) -> Vec<f32> {
+pub fn mandelbrot(cfg: &FractalCfg) -> Vec<f32> {
     let width          = cfg.width    as usize;
     let height         = cfg.height   as usize;
     let center_r       = cfg.center_r as f32;
@@ -104,7 +103,13 @@ pub fn mandelbrot(
             let mk = mk.as_f32x8().as_array();
             let mag2final = mag2final.as_f32x8().as_array();
             for i in 0..8 {
-                buf[y*height + x + i] = smooth_iter(mk[i], mag2final[i]);
+                buf[y*height + x + i] = if (mk[i] as u32) >= (max_iterations) {
+                    -1f32
+                    // 0f32
+                } else {
+                    smooth_iter(mk[i], mag2final[i])
+                    // mk[i]
+                }
             }
         }
     }

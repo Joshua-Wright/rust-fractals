@@ -17,6 +17,7 @@ use palette::{Rgb, Hsv, Lch, Hue};
 use palette::pixel::Srgb;
 
 use rust_image_stuff::*;
+use rust_image_stuff::colors::*;
 
 fn cmap_hsv(x: f64) -> (u8,u8,u8){
     let start_color = Srgb::new(1.0, 0.0, 0.0);
@@ -25,9 +26,21 @@ fn cmap_hsv(x: f64) -> (u8,u8,u8){
     c.to_pixel()
 }
 
+fn log2(x: f32) -> f32 {
+    if x < 0.0 {
+        -1f32
+    } else {
+        (x+1f32).log2()
+    }
+}
+
 fn sin2(x: f32) -> f32 { 
-    let x = x/(std::f32::consts::PI*2f32);
-    (x.sin() * x.sin()) as f32
+    let pi = std::f32::consts::PI;
+    if x < 0.0 {
+        -1f32
+    } else {
+        0.5f32*(x * pi / 4f32).sin() + 0.5f32
+    }
 }
 
 
@@ -72,15 +85,18 @@ fn main() {
     let buf2 = mandelbrot(&cfg);
     println!("max {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::max));
     println!("min {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::min));
-    let buf: Vec<u8> = buf2.into_iter()
-        .map(|x| x.log2())
-        // .map(sin2)
-        .flat_map(|x| {
-            let (r,g,b) = cmap_hsv(x as f64);
-            vec![r,g,b]
-        }
-        )
+
+    // let buf = ColorMapHSV{}.colorize_buffer(buf2.into_iter().map(|x| x.log2()).collect());
+    // let buf = ColorMapHot{}.colorize_buffer(buf2.into_iter().map(|x| x.log2()).collect());
+    // let buf2 = buf2.into_iter().map(|x| x.sin()).collect();
+    let buf2: Vec<f32> = buf2.into_iter()
+        .map(log2)
+        .map(sin2)
         .collect();
+    println!("max {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::max));
+    println!("min {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::min));
+    let buf = ColorMapHot{}.colorize_buffer(buf2);
+
 
     println!("u8 max {:?}", buf.iter().cloned().max());
     println!("u8 min {:?}", buf.iter().cloned().min());

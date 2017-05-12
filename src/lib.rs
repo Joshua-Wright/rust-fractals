@@ -2,7 +2,10 @@
 #![crate_name="rust_image_stuff"]
 #![feature(test)]
 extern crate test;
+
+extern crate num;
 extern crate x86intrin;
+extern crate palette;
 
 #[macro_use]
 extern crate serde_derive;
@@ -22,7 +25,7 @@ pub struct FractalCfg {
 }
 
 impl Default for FractalCfg {
-    fn default() -> FractalCfg {
+    fn default() -> Self {
         FractalCfg{
             width: 800u32, height: 800u32,
             max_iterations: 256u32,
@@ -52,6 +55,8 @@ impl FromMatches for FractalCfg {
 
 mod fractal;
 pub use fractal::mandelbrot;
+
+pub mod colors;
 
 #[cfg(test)]
 mod tests {
