@@ -1,5 +1,4 @@
 // lib.rs
-#![crate_name="rust_image_stuff"]
 #![feature(test)]
 extern crate test;
 

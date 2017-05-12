@@ -2,7 +2,6 @@
 use FractalCfg;
 use x86intrin::avx::*;
 
-
 fn calc_width(
         x:usize, y: usize,
         zoom: f32

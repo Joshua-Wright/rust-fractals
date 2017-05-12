@@ -1,11 +1,11 @@
 // main.rs
-#![crate_name="rust_image_stuff"]
-extern crate rust_image_stuff;
 extern crate imagefmt;
 
 #[macro_use]
 extern crate clap;
 use clap::{Arg, App};
+
+extern crate serde_json;
 
 /*
 RUSTFLAGS="-C target-feature=+avx" cargo run --release
@@ -13,12 +13,15 @@ RUSTFLAGS="-C target-feature=+avx" cargo run --release
 RUSTFLAGS="-C target-feature=+avx" cargo run --release -- -r=-0.743643887037151 -i 0.131825904205330 --zoom 100 --iter 2048
 */
 
-use rust_image_stuff::*;
-use rust_image_stuff::colors::*;
+extern crate fractals;
+use fractals::*;
+use fractals::colors::*;
+
+use std::fs::File;
+use std::io::prelude::*;
 
 
 fn main() {
-    println!("Hello, world!");
     let matches = App::new("mandelbrot")
         .arg(Arg::with_name("width")
              .help("width of image")
@@ -55,22 +58,32 @@ fn main() {
              .default_value("1")
              .short("m")
              )
+        .arg(Arg::with_name("output")
+             .help("output filename")
+             .default_value("output.png")
+             .short("o")
+             )
         .get_matches();
     
     let cfg = FractalCfg::from_matches(&matches);
     let mul = value_t!(matches, "mul", f32).unwrap();
+    let output = matches.value_of("output").unwrap();
 
     let buf2 = mandelbrot(&cfg);
-    println!("f32 max {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::max));
-    println!("f32 min {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::min));
+
+    // println!("f32 max {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::max));
+    // println!("f32 min {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::min));
 
     let buf2 = normalize(buf2, mul);
     let buf = ColorMapHot{}.colorize_buffer(buf2);
 
 
-    println!("u8 max {:?}", buf.iter().cloned().max());
-    println!("u8 min {:?}", buf.iter().cloned().min());
-    imagefmt::write("test.png", cfg.width as usize, cfg.height as usize, imagefmt::ColFmt::RGB, &buf, imagefmt::ColType::Auto).unwrap();
+    // println!("u8 max {:?}", buf.iter().cloned().max());
+    // println!("u8 min {:?}", buf.iter().cloned().min());
+    imagefmt::write(output, cfg.width as usize, cfg.height as usize, imagefmt::ColFmt::RGB, &buf, imagefmt::ColType::Auto).unwrap();
+
+    let mut outfile = File::create(output.to_owned() + ".json").unwrap();
+    outfile.write_all(&serde_json::to_vec_pretty(&cfg).unwrap()).unwrap();
 
 }
 

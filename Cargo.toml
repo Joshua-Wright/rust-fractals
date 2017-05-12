@@ -1,5 +1,5 @@
 [package]
-name = "rust_image_stuff"
+name = "fractals"
 version = "0.1.0"
 authors = ["Josh Wright <madewithlinux.josh@gmail.com>"]
 
