@@ -1,11 +1,6 @@
 // colors.rs
-use FractalCfg;
-
-use palette::{Rgb, Hsv, Lch, Hue};
+use palette::{Rgb, Hsv, Hue};
 use palette::pixel::Srgb;
-
-use num::traits::Float;
-
 
 pub trait ColorMap {
     // x on range [0,1)
@@ -39,8 +34,8 @@ impl ColorMap for ColorMapHSV {
 pub struct ColorMapHot{}
 impl ColorMap for ColorMapHot {
     fn colorize(&self, x: f32) -> (u8,u8,u8) {
-        let x = ((x % 1.0)*255.0) as f64;
-        let (r,g,b) = match (x as i32) {
+        let x = (x * 255.0) as f64;
+        let (r,g,b) = match x as i32 {
             0...94   => (51.0*x/19.0, 0.0, 0.0),
             95...190 => (255.0, (85.0*x - 8075.0)/32.0, 0.0),
             _        => (255.0, 255.0, 255.0 * x / 64.0 - 48705.0 / 64.0),

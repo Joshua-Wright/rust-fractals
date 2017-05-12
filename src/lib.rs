@@ -3,7 +3,6 @@
 #![feature(test)]
 extern crate test;
 
-extern crate num;
 extern crate x86intrin;
 extern crate palette;
 
@@ -57,6 +56,34 @@ mod fractal;
 pub use fractal::mandelbrot;
 
 pub mod colors;
+
+fn log2(x: f32) -> f32 {
+    if x < 0.0 {
+        -1f32
+    } else {
+        (x+1f32).log2()
+    }
+}
+
+fn sin2(x: f32) -> f32 { 
+    let pi = std::f32::consts::PI;
+    if x < 0.0 {
+        -1f32
+    } else {
+        // div by eps+1 to make sure it is in range [0,1), not [0,1]
+        (0.5f32*(x * pi / 4f32).sin() + 0.5f32) / (1f32 + std::f32::EPSILON)
+    }
+}
+
+pub fn normalize(xs: Vec<f32>, mul: f32) -> Vec<f32> {
+    xs.into_iter()
+        .map(log2)
+        .map(|x| x*mul)
+        .map(sin2)
+        .collect()
+}
+
+
 
 #[cfg(test)]
 mod tests {
