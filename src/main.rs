@@ -81,15 +81,21 @@ fn main() {
              .long("julia")
              .takes_value(false)
              )
+        .arg(Arg::with_name("bin")
+             .help("also output bin of the image, for later recoloring")
+             .short("b")
+             .long("bin")
+             .takes_value(false)
+             )
         .get_matches();
     
     let cfg = FractalCfg::from_matches(&matches);
     let output = matches.value_of("output").unwrap();
 
-    write_fractal(&cfg, &output).unwrap()
+    write_fractal(&cfg, &output, matches.is_present("bin")).unwrap()
 }
 
-fn write_fractal(cfg: &FractalCfg, output: &str) -> std::io::Result<()> {
+fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool) -> std::io::Result<()> {
 
     let buf = if cfg.julia {
         julia(&cfg)
@@ -99,8 +105,10 @@ fn write_fractal(cfg: &FractalCfg, output: &str) -> std::io::Result<()> {
 
     // println!("f32 max {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::max));
     // println!("f32 min {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::min));
-    let mut binfile = File::create(output.clone().to_owned() + ".bin")?;
-    binfile.write(&bincode::serialize(&buf, bincode::Infinite).unwrap())?;
+    if write_bin {
+        let mut binfile = File::create(output.clone().to_owned() + ".bin")?;
+        binfile.write(&bincode::serialize(&buf, bincode::Infinite).unwrap())?;
+    }
 
     let buf = normalize(buf, cfg.multiplier as f32);
     let buf = ColorMapHot{}.colorize_buffer(buf);
