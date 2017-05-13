@@ -1,11 +1,10 @@
 // main.rs
 extern crate imagefmt;
-
-#[macro_use]
+extern crate serde_json;
+extern crate bincode;
 extern crate clap;
 use clap::{Arg, App};
 
-extern crate serde_json;
 
 /*
 RUSTFLAGS="-C target-feature=+avx" cargo run --release
@@ -54,11 +53,12 @@ fn main() {
              .default_value("1")
              .long("zoom")
              )
-        .arg(Arg::with_name("mul")
+        .arg(Arg::with_name("multiplier")
              .help("multiplier for colormap")
              .default_value("1")
              .short("m")
              .long("mul")
+             .long("multiplier")
              )
         .arg(Arg::with_name("output")
              .help("output filename")
@@ -84,10 +84,14 @@ fn main() {
         .get_matches();
     
     let cfg = FractalCfg::from_matches(&matches);
-    let mul = value_t!(matches, "mul", f32).unwrap();
     let output = matches.value_of("output").unwrap();
 
-    let buf2 = if matches.is_present("julia") {
+    write_fractal(&cfg, &output).unwrap()
+}
+
+fn write_fractal(cfg: &FractalCfg, output: &str) -> std::io::Result<()> {
+
+    let buf = if cfg.julia {
         julia(&cfg)
     } else {
         mandelbrot(&cfg)
@@ -95,17 +99,18 @@ fn main() {
 
     // println!("f32 max {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::max));
     // println!("f32 min {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::min));
+    let mut binfile = File::create(output.clone().to_owned() + ".bin")?;
+    binfile.write(&bincode::serialize(&buf, bincode::Infinite).unwrap())?;
 
-    let buf2 = normalize(buf2, mul);
-    let buf = ColorMapHot{}.colorize_buffer(buf2);
-
+    let buf = normalize(buf, cfg.multiplier as f32);
+    let buf = ColorMapHot{}.colorize_buffer(buf);
 
     // println!("u8 max {:?}", buf.iter().cloned().max());
     // println!("u8 min {:?}", buf.iter().cloned().min());
+    
     imagefmt::write(output, cfg.width as usize, cfg.height as usize, imagefmt::ColFmt::RGB, &buf, imagefmt::ColType::Auto).unwrap();
 
-    let mut outfile = File::create(output.to_owned() + ".json").unwrap();
-    outfile.write_all(&serde_json::to_vec_pretty(&cfg).unwrap()).unwrap();
-
+    let mut outfile = File::create(output.to_owned() + ".json")?;
+    outfile.write_all(&serde_json::to_vec_pretty(&cfg)?)
 }
 

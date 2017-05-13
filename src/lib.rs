@@ -21,6 +21,8 @@ pub struct FractalCfg {
     pub center_r: f64, pub center_i: f64,
     pub zoom: f64,
     pub cr: f64, pub ci: f64,
+    pub multiplier: f64,
+    pub julia: bool,
 }
 
 impl Default for FractalCfg {
@@ -31,6 +33,8 @@ impl Default for FractalCfg {
             center_r: 0.0, center_i: 0.0,
             zoom: 1.0,
             cr: 0.0, ci: 0.0,
+            multiplier: 1.0,
+            julia: false,
         }
     }
 }
@@ -51,6 +55,8 @@ impl FromMatches for FractalCfg {
             zoom: value_t!(matches, "zoom", f64).unwrap_or(d.zoom),
             cr: value_t!(matches, "cr", f64).unwrap_or(d.ci),
             ci: value_t!(matches, "ci", f64).unwrap_or(d.ci),
+            multiplier: value_t!(matches, "multiplier", f64).unwrap_or(d.multiplier),
+            julia: matches.is_present("julia"),
         }
     }
 }
