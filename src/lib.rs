@@ -20,6 +20,7 @@ pub struct FractalCfg {
     pub max_iterations: u32,
     pub center_r: f64, pub center_i: f64,
     pub zoom: f64,
+    pub cr: f64, pub ci: f64,
 }
 
 impl Default for FractalCfg {
@@ -29,6 +30,7 @@ impl Default for FractalCfg {
             max_iterations: 256u32,
             center_r: 0.0, center_i: 0.0,
             zoom: 1.0,
+            cr: 0.0, ci: 0.0,
         }
     }
 }
@@ -47,12 +49,14 @@ impl FromMatches for FractalCfg {
             center_r: value_t!(matches, "r", f64).unwrap_or(d.center_r),
             center_i: value_t!(matches, "i", f64).unwrap_or(d.center_i),
             zoom: value_t!(matches, "zoom", f64).unwrap_or(d.zoom),
+            cr: value_t!(matches, "cr", f64).unwrap_or(d.ci),
+            ci: value_t!(matches, "ci", f64).unwrap_or(d.ci),
         }
     }
 }
 
 mod fractal;
-pub use fractal::mandelbrot;
+pub use fractal::*;
 
 pub mod colors;
 

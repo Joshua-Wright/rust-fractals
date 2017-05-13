@@ -35,8 +35,8 @@ fn main() {
              )
         .arg(Arg::with_name("iter")
              .help("iteration count")
-             .long("iter")
              .default_value("256")
+             .long("iter")
              )
         .arg(Arg::with_name("r")
              .help("real value of center point")
@@ -47,6 +47,7 @@ fn main() {
              .help("imaginary value of center point")
              .default_value("0")
              .short("i")
+             .long("iter")
              )
         .arg(Arg::with_name("zoom")
              .help("zoom")
@@ -57,11 +58,28 @@ fn main() {
              .help("multiplier for colormap")
              .default_value("1")
              .short("m")
+             .long("mul")
              )
         .arg(Arg::with_name("output")
              .help("output filename")
              .default_value("output.png")
              .short("o")
+             .long("output")
+             .long("out")
+             )
+        .arg(Arg::with_name("cr")
+             .default_value("0.0")
+             .long("cr")
+             )
+        .arg(Arg::with_name("ci")
+             .default_value("0.0")
+             .long("ci")
+             )
+        .arg(Arg::with_name("julia")
+             .help("render julia set instead of mandelbrot set")
+             .short("j")
+             .long("julia")
+             .takes_value(false)
              )
         .get_matches();
     
@@ -69,7 +87,11 @@ fn main() {
     let mul = value_t!(matches, "mul", f32).unwrap();
     let output = matches.value_of("output").unwrap();
 
-    let buf2 = mandelbrot(&cfg);
+    let buf2 = if matches.is_present("julia") {
+        julia(&cfg)
+    } else {
+        mandelbrot(&cfg)
+    };
 
     // println!("f32 max {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::max));
     // println!("f32 min {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::min));
