@@ -14,6 +14,8 @@ extern crate serde_json;
 extern crate clap;
 use clap::ArgMatches;
 
+use std::f32::consts::PI;
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct FractalCfg {
     pub width: u32, pub height: u32,
@@ -23,6 +25,7 @@ pub struct FractalCfg {
     pub cr: f64, pub ci: f64,
     pub multiplier: f64,
     pub julia: bool,
+    pub offset: f64,
 }
 
 impl Default for FractalCfg {
@@ -35,6 +38,7 @@ impl Default for FractalCfg {
             cr: 0.0, ci: 0.0,
             multiplier: 1.0,
             julia: false,
+            offset: 0f64,
         }
     }
 }
@@ -57,6 +61,7 @@ impl FromMatches for FractalCfg {
             ci: value_t!(matches, "ci", f64).unwrap_or(d.ci),
             multiplier: value_t!(matches, "multiplier", f64).unwrap_or(d.multiplier),
             julia: matches.is_present("julia"),
+            offset: value_t!(matches, "offset", f64).unwrap_or(d.offset),
         }
     }
 }
@@ -66,29 +71,21 @@ pub use fractal::*;
 
 pub mod colors;
 
-fn log2(x: f32) -> f32 {
-    if x < 0.0 {
-        -1f32
-    } else {
-        (x+1f32).log2()
-    }
-}
-
-fn sin2(x: f32) -> f32 { 
-    let pi = std::f32::consts::PI;
-    if x < 0.0 {
-        -1f32
-    } else {
-        // div by eps+1 to make sure it is in range [0,1), not [0,1]
-        (0.5f32*(x * pi / 4f32).sin() + 0.5f32) / (1f32 + std::f32::EPSILON)
-    }
-}
-
-pub fn normalize(xs: Vec<f32>, mul: f32) -> Vec<f32> {
+// offset on range [0,1)
+pub fn normalize(xs: Vec<f32>, mul: f32, offset: f32) -> Vec<f32> {
     xs.into_iter()
-        .map(log2)
-        .map(|x| x*mul)
-        .map(sin2)
+        .map(|x| {
+            if x < 0f32 {
+                -1f32
+            } else {
+                let x = (x+1f32).log2();
+                let x = x * mul;
+                let x = x + offset;
+                // div by eps+1 to make sure it is in range [0,1), not [0,1]
+                let x = (0.5f32*(x * PI * 2f32).sin() + 0.5f32) / (1f32 + std::f32::EPSILON);
+                x
+            }
+        })
         .collect()
 }
 

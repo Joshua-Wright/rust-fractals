@@ -58,7 +58,6 @@ fn main() {
              .default_value("1")
              .short("m")
              .long("mul")
-             .long("multiplier")
              )
         .arg(Arg::with_name("output")
              .help("output filename")
@@ -75,6 +74,11 @@ fn main() {
              .default_value("0.0")
              .long("ci")
              )
+        .arg(Arg::with_name("offset")
+             .help("offset of color gradient")
+             .default_value("0.0")
+             .long("offset")
+             )
         .arg(Arg::with_name("julia")
              .help("render julia set instead of mandelbrot set")
              .short("j")
@@ -87,15 +91,34 @@ fn main() {
              .long("bin")
              .takes_value(false)
              )
+        .arg(Arg::with_name("quiet")
+             .help("supress info")
+             .short("q")
+             .long("quiet")
+             .takes_value(false)
+             )
         .get_matches();
     
     let cfg = FractalCfg::from_matches(&matches);
     let output = matches.value_of("output").unwrap();
 
-    write_fractal(&cfg, &output, matches.is_present("bin")).unwrap()
+    write_fractal(&cfg, &output, matches.is_present("bin"), matches.is_present("quiet")).unwrap()
 }
 
-fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool) -> std::io::Result<()> {
+fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: bool) -> std::io::Result<()> {
+
+    let metadata_file_path = format!("{}.json", output);
+    
+    if let Ok(mut metadata_file) = File::open(&metadata_file_path) {
+        let mut contents = vec![];
+        metadata_file.read_to_end(&mut contents)?;
+        if contents == serde_json::to_vec_pretty(&cfg).unwrap() {
+            if !quiet {
+                println!("found existing file {}", output);
+            }
+            return Ok(());
+        }
+    }
 
     let buf = if cfg.julia {
         julia(&cfg)
@@ -103,22 +126,27 @@ fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool) -> std::io::Re
         mandelbrot(&cfg)
     };
 
-    // println!("f32 max {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::max));
-    // println!("f32 min {:?}", buf2.iter().cloned().fold(std::f32::NAN, f32::min));
+    if !quiet {
+        println!("f32 max {:?}", buf.iter().cloned().fold(std::f32::NAN, f32::max));
+        println!("f32 min {:?}", buf.iter().cloned().fold(std::f32::NAN, f32::min));
+    }
     if write_bin {
-        let mut binfile = File::create(output.clone().to_owned() + ".bin")?;
+        let bin_file_path = format!("{}.bin", output);
+        let mut binfile = File::create(bin_file_path)?;
         binfile.write(&bincode::serialize(&buf, bincode::Infinite).unwrap())?;
     }
 
-    let buf = normalize(buf, cfg.multiplier as f32);
+    let buf = normalize(buf, cfg.multiplier as f32, cfg.offset as f32);
     let buf = ColorMapHot{}.colorize_buffer(buf);
 
-    // println!("u8 max {:?}", buf.iter().cloned().max());
-    // println!("u8 min {:?}", buf.iter().cloned().min());
+    if !quiet {
+        println!("u8 max {:?}", buf.iter().cloned().max());
+        println!("u8 min {:?}", buf.iter().cloned().min());
+    }
     
     imagefmt::write(output, cfg.width as usize, cfg.height as usize, imagefmt::ColFmt::RGB, &buf, imagefmt::ColType::Auto).unwrap();
 
-    let mut outfile = File::create(output.to_owned() + ".json")?;
+    let mut outfile = File::create(metadata_file_path)?;
     outfile.write_all(&serde_json::to_vec_pretty(&cfg)?)
 }
 
