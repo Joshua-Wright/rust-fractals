@@ -1,22 +1,18 @@
-// main.rs
+// julia_animation.rs
 extern crate fractals;
 use fractals::*;
-use fractals::colors::*;
 extern crate imagefmt;
 extern crate serde_json;
 extern crate bincode;
+#[macro_use]
 extern crate clap;
 use clap::{Arg, App};
-use std::fs::File;
 use std::io::prelude::*;
+use std::path::Path;
+extern crate rayon;
+use rayon::prelude::*;
 
-/*
-RUSTFLAGS="-C target-feature=+avx" cargo run --release
-
-RUSTFLAGS="-C target-feature=+avx" cargo run --release -- -r=-0.743643887037151 -i 0.131825904205330 --zoom 100 --iter 2048
-*/
-
-fn main() {
+pub fn main() {
     let matches = App::new("mandelbrot")
         .arg(Arg::with_name("width")
              .help("width of image")
@@ -57,17 +53,17 @@ fn main() {
              )
         .arg(Arg::with_name("output")
              .help("output filename")
-             .default_value("output.png")
+             .default_value("frames")
              .short("o")
              .long("output")
              .long("out")
              )
         .arg(Arg::with_name("cr")
-             .default_value("0.0")
+             .default_value("0.285")
              .long("cr")
              )
         .arg(Arg::with_name("ci")
-             .default_value("0.0")
+             .default_value("0.01")
              .long("ci")
              )
         .arg(Arg::with_name("offset")
@@ -75,17 +71,10 @@ fn main() {
              .default_value("0.0")
              .long("offset")
              )
-        .arg(Arg::with_name("julia")
-             .help("render julia set instead of mandelbrot set")
-             .short("j")
-             .long("julia")
-             .takes_value(false)
-             )
-        .arg(Arg::with_name("bin")
-             .help("also output bin of the image, for later recoloring")
-             .short("b")
-             .long("bin")
-             .takes_value(false)
+        .arg(Arg::with_name("radius")
+             .help("radius of circle")
+             .default_value("0.01")
+             .long("radius")
              )
         .arg(Arg::with_name("quiet")
              .help("supress info")
@@ -98,6 +87,25 @@ fn main() {
     let cfg = FractalCfg::from_matches(&matches);
     let output = matches.value_of("output").unwrap();
 
-    write_fractal(&cfg, &output, matches.is_present("bin"), matches.is_present("quiet")).unwrap()
+    let cfg = FractalCfg { julia: true, .. cfg };
+    julia_animation(&cfg, &output, value_t!(matches, "radius", f64).unwrap());
 }
 
+fn julia_animation(cfg: &FractalCfg, output: &str, radius: f64) {
+    let n_frames: i32 = 300;
+    (0..n_frames).into_par_iter()
+        .for_each(|i| {
+            let t = (i as f64) / (n_frames as f64) * 2.0 * std::f64::consts::PI;
+            let new_cfg = FractalCfg {
+                cr: cfg.cr + t.cos() * radius,
+                ci: cfg.ci + t.sin() * radius,
+                .. cfg.clone()
+            };
+            let filename = format!("frame_{}.png", i);
+            print!("rendering {}...", i);
+            std::io::stdout().flush().unwrap();
+            write_fractal(&new_cfg, Path::new(output).join(filename).to_str().unwrap(), false, true).unwrap();
+            println!("done");
+        });
+    println!("ffmpeg -framerate 60 -i {}/frame_%d.png {}.mp4", output, output);
+}

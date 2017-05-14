@@ -4,6 +4,8 @@ extern crate test;
 
 extern crate x86intrin;
 extern crate palette;
+extern crate bincode;
+extern crate imagefmt;
 
 #[macro_use]
 extern crate serde_derive;
@@ -13,6 +15,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate clap;
 use clap::ArgMatches;
+
+use std::fs::File;
+use std::io::prelude::*;
 
 use std::f32::consts::PI;
 
@@ -70,6 +75,7 @@ mod fractal;
 pub use fractal::*;
 
 pub mod colors;
+use colors::*;
 
 // offset on range [0,1)
 pub fn normalize(xs: Vec<f32>, mul: f32, offset: f32) -> Vec<f32> {
@@ -88,6 +94,56 @@ pub fn normalize(xs: Vec<f32>, mul: f32, offset: f32) -> Vec<f32> {
         })
         .collect()
 }
+
+
+
+
+
+pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: bool) -> std::io::Result<()> {
+
+    let metadata_file_path = format!("{}.json", output);
+    
+    if let Ok(mut metadata_file) = File::open(&metadata_file_path) {
+        let mut contents = vec![];
+        metadata_file.read_to_end(&mut contents)?;
+        if contents == serde_json::to_vec_pretty(&cfg).unwrap() {
+            if !quiet {
+                println!("found existing file {}", output);
+            }
+            return Ok(());
+        }
+    }
+
+    let buf = if cfg.julia {
+        julia(&cfg)
+    } else {
+        mandelbrot(&cfg)
+    };
+
+    if !quiet {
+        println!("f32 max {:?}", buf.iter().cloned().fold(std::f32::NAN, f32::max));
+        println!("f32 min {:?}", buf.iter().cloned().fold(std::f32::NAN, f32::min));
+    }
+    if write_bin {
+        let bin_file_path = format!("{}.bin", output);
+        let mut binfile = File::create(bin_file_path)?;
+        binfile.write(&bincode::serialize(&buf, bincode::Infinite).unwrap())?;
+    }
+
+    let buf = normalize(buf, cfg.multiplier as f32, cfg.offset as f32);
+    let buf = ColorMapHot{}.colorize_buffer(buf);
+
+    if !quiet {
+        println!("u8 max {:?}", buf.iter().cloned().max());
+        println!("u8 min {:?}", buf.iter().cloned().min());
+    }
+    
+    imagefmt::write(output, cfg.width as usize, cfg.height as usize, imagefmt::ColFmt::RGB, &buf, imagefmt::ColType::Auto).unwrap();
+
+    let mut outfile = File::create(metadata_file_path)?;
+    outfile.write_all(&serde_json::to_vec_pretty(&cfg)?)
+}
+
 
 
 

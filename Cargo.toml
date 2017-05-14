@@ -14,3 +14,4 @@ serde_derive = "*"
 serde_json = "*"
 clap = {version = "~2.19.0", features = ["yaml"]}
 bincode = "*"
+rayon = "0.7.0"
