@@ -8,7 +8,8 @@ extern crate bincode;
 extern crate clap;
 use clap::{Arg, App};
 use std::io::prelude::*;
-use std::path::Path;
+use std::path::*;
+use std::fs::*;
 extern crate rayon;
 use rayon::prelude::*;
 
@@ -76,6 +77,12 @@ pub fn main() {
              .default_value("0.01")
              .long("radius")
              )
+        .arg(Arg::with_name("n_frames")
+             .help("number of frames to render")
+             .default_value("300")
+             .long("frames")
+             .short("n")
+             )
         .arg(Arg::with_name("quiet")
              .help("supress info")
              .short("q")
@@ -88,11 +95,17 @@ pub fn main() {
     let output = matches.value_of("output").unwrap();
 
     let cfg = FractalCfg { julia: true, .. cfg };
-    julia_animation(&cfg, &output, value_t!(matches, "radius", f64).unwrap());
+    julia_animation(&cfg, &output, 
+                    value_t!(matches, "radius", f64).unwrap(),
+                    value_t!(matches, "n_frames", i32).unwrap()
+                    );
 }
 
-fn julia_animation(cfg: &FractalCfg, output: &str, radius: f64) {
-    let n_frames: i32 = 300;
+fn julia_animation(cfg: &FractalCfg, output: &str, radius: f64, n_frames: i32) {
+
+    // create directory if it doesn't already exist
+    create_dir(output).unwrap_or(());
+
     (0..n_frames).into_par_iter()
         .for_each(|i| {
             let t = (i as f64) / (n_frames as f64) * 2.0 * std::f64::consts::PI;
@@ -108,4 +121,10 @@ fn julia_animation(cfg: &FractalCfg, output: &str, radius: f64) {
             println!("done");
         });
     println!("ffmpeg -framerate 60 -i {}/frame_%d.png {}.mp4", output, output);
+    std::process::Command::new("ffmpeg")
+        .args(&["-framerate", "60", "-y", "-i", &format!("{}/frame_%d.png", output), &format!("{}.mp4", output)])
+        .spawn()
+        .expect("failed to spawn subprocess")
+        .wait()
+        .unwrap();
 }

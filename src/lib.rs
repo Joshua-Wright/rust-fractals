@@ -138,7 +138,7 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
         println!("u8 min {:?}", buf.iter().cloned().min());
     }
     
-    imagefmt::write(output, cfg.width as usize, cfg.height as usize, imagefmt::ColFmt::RGB, &buf, imagefmt::ColType::Auto).unwrap();
+    imagefmt::write(output, cfg.width as usize, cfg.height as usize, imagefmt::ColFmt::RGB, &buf, imagefmt::ColType::Auto).expect("error writing file");
 
     let mut outfile = File::create(metadata_file_path)?;
     outfile.write_all(&serde_json::to_vec_pretty(&cfg)?)
