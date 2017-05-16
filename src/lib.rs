@@ -21,7 +21,7 @@ use std::io::prelude::*;
 
 use std::f32::consts::PI;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FractalCfg {
     pub width: u32, pub height: u32,
     pub max_iterations: u32,
@@ -31,6 +31,7 @@ pub struct FractalCfg {
     pub multiplier: f64,
     pub julia: bool,
     pub offset: f64,
+    pub colormap: String,
 }
 
 impl Default for FractalCfg {
@@ -44,6 +45,7 @@ impl Default for FractalCfg {
             multiplier: 1.0,
             julia: false,
             offset: 0f64,
+            colormap: "hot".to_owned(),
         }
     }
 }
@@ -67,6 +69,7 @@ impl FromMatches for FractalCfg {
             multiplier: value_t!(matches, "multiplier", f64).unwrap_or(d.multiplier),
             julia: matches.is_present("julia"),
             offset: value_t!(matches, "offset", f64).unwrap_or(d.offset),
+            colormap: value_t!(matches, "colormap", String).unwrap_or(d.colormap),
         }
     }
 }
@@ -131,7 +134,7 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
     }
 
     let buf = normalize(buf, cfg.multiplier as f32, cfg.offset as f32);
-    let buf = ColorMapHot{}.colorize_buffer(buf);
+    let buf = color_map_from_str(&cfg.colormap).colorize_buffer(buf);
 
     if !quiet {
         println!("u8 max {:?}", buf.iter().cloned().max());

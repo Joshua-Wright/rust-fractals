@@ -1,14 +1,11 @@
 // main.rs
 extern crate fractals;
 use fractals::*;
-use fractals::colors::*;
 extern crate imagefmt;
 extern crate serde_json;
 extern crate bincode;
 extern crate clap;
 use clap::{Arg, App};
-use std::fs::File;
-use std::io::prelude::*;
 
 /*
 RUSTFLAGS="-C target-feature=+avx" cargo run --release
@@ -92,6 +89,11 @@ fn main() {
              .short("q")
              .long("quiet")
              .takes_value(false)
+             )
+        .arg(Arg::with_name("colormap")
+             .help("colormap to use")
+             .long("cmap")
+             .default_value("hot")
              )
         .get_matches();
     

@@ -1,6 +1,7 @@
 // colors.rs
 use palette::{Rgb, Hsv, Hue};
 use palette::pixel::Srgb;
+use std::boxed::Box;
 
 pub trait ColorMap {
     // x on range [0,1)
@@ -18,6 +19,21 @@ pub trait ColorMap {
             outbuf[3*i + 2] = b;
         }
         outbuf
+    }
+
+}
+
+pub fn color_map_from_str(s: &str) -> Box<ColorMap> {
+    match s {
+        "hot" => Box::new(ColorMapHot{}),
+        "hsv" => Box::new(ColorMapHSV{}),
+        "cosine" => Box::new(ColorMap3dCosine{
+            a: [0.5, 0.5, 0.5],
+            b: [0.5, 0.5, 0.5],
+            c: [9.6, 9.6, 9.6],
+            d: [3.0, 3.6, 4.0],
+        }),
+        _ => Box::new(ColorMapHot{}),
     }
 }
 
@@ -41,6 +57,26 @@ impl ColorMap for ColorMapHot {
             _        => (255.0, 255.0, 255.0 * x / 64.0 - 48705.0 / 64.0),
         };
         (r as u8, g as u8, b as u8)
+    }
+}
+
+pub struct ColorMap3dCosine {
+    pub a: [f32; 3],
+    pub b: [f32; 3],
+    pub c: [f32; 3],
+    pub d: [f32; 3],
+}
+impl ColorMap for ColorMap3dCosine {
+    fn colorize(&self, x: f32) -> (u8,u8,u8) {
+        let mut pix: [f32; 3] = [0f32; 3];
+        for i in 0..3 {
+            let a = self.a[i];
+            let b = self.b[i];
+            let c = self.c[i];
+            let d = self.d[i];
+            pix[i] = 255f32 * (a + b * (c*x + d).cos());
+        }
+        (pix[0] as u8, pix[1] as u8, pix[2] as u8)
     }
 }
 
