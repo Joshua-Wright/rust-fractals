@@ -8,13 +8,11 @@ extern crate clap;
 use clap::{Arg, App};
 
 /*
-RUSTFLAGS="-C target-feature=+avx" cargo run --release
-
-RUSTFLAGS="-C target-feature=+avx" cargo run --release -- -r=-0.743643887037151 -i 0.131825904205330 --zoom 100 --iter 2048
+RUSTFLAGS="-C target-cpu=native" cargo build --bins --release && cp target/release/{fractals,julia_animation} .
 */
 
 fn main() {
-    let matches = App::new("mandelbrot")
+    let matches = App::new("mandelbrot and julia set")
         .arg(Arg::with_name("width")
              .help("width of image")
              .short("x")

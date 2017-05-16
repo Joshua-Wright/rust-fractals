@@ -14,7 +14,7 @@ extern crate rayon;
 use rayon::prelude::*;
 
 pub fn main() {
-    let matches = App::new("mandelbrot")
+    let matches = App::new("julia animation")
         .arg(Arg::with_name("width")
              .help("width of image")
              .short("x")
@@ -89,6 +89,11 @@ pub fn main() {
              .long("quiet")
              .takes_value(false)
              )
+        .arg(Arg::with_name("colormap")
+             .help("colormap to use")
+             .long("cmap")
+             .default_value("hot")
+             )
         .get_matches();
     
     let cfg = FractalCfg::from_matches(&matches);
@@ -120,11 +125,11 @@ fn julia_animation(cfg: &FractalCfg, output: &str, radius: f64, n_frames: i32) {
             write_fractal(&new_cfg, Path::new(output).join(filename).to_str().unwrap(), false, true).unwrap();
             println!("done");
         });
-    println!("ffmpeg -framerate 60 -i {}/frame_%d.png {}.mp4", output, output);
+    println!("ffmpeg -framerate 60 -y -i {}/frame_%d.png {}.mp4", output, output);
     std::process::Command::new("ffmpeg")
         .args(&["-framerate", "60", "-y", "-i", &format!("{}/frame_%d.png", output), &format!("{}.mp4", output)])
         .spawn()
-        .expect("failed to spawn subprocess")
+        .expect("failed to spawn ffmpeg")
         .wait()
-        .unwrap();
+        .expect("ffmpeg failed");
 }

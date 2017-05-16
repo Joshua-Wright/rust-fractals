@@ -1,7 +1,4 @@
 // lib.rs
-#![feature(test)]
-extern crate test;
-
 extern crate x86intrin;
 extern crate palette;
 extern crate bincode;
@@ -147,68 +144,3 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
     outfile.write_all(&serde_json::to_vec_pretty(&cfg)?)
 }
 
-
-
-
-#[cfg(test)]
-mod tests {
-    #[feature(test)]
-
-    extern crate test;
-    use test::Bencher;
-    use test::black_box;
-    use std::ops::Range;
-
-    fn transform10(mag: f32, mx_f32x8: f32) -> f32 {
-        let log_zn = mag.log10()/2f32;
-        let nu = (log_zn / 2f32.log10()).log10() / 2f32.log10();
-        mx_f32x8 + 1f32 - nu
-    }
-
-    fn transform2(mag: f32, mx_f32x8: f32) -> f32 {
-        let log_zn = mag.log2()/2f32;
-        let nu = log_zn.log2();
-        mx_f32x8 + 1f32 - nu
-    }
-
-    #[bench]
-    fn bench_log10(b: &mut Bencher) {
-        b.iter(|| {
-            let n = black_box(100);
-            let mut sum = 0f32;
-            for z in (40..(10*n)).map(|x| (x as f32)/10f32) {
-                for c in (4..n).map(|x| x as f32) {
-                    sum += transform10(z,c);
-                }
-            }
-            sum
-        })
-    }
-
-    #[bench]
-    fn bench_log2(b: &mut Bencher) {
-        b.iter(|| {
-            let n = black_box(100);
-            let mut sum = 0f32;
-            for z in (40..(10*n)).map(|x| (x as f32)/10f32) {
-                for c in (4..n).map(|x| x as f32) {
-                    sum += transform2(z,c);
-                }
-            }
-            sum
-        })
-    }
-
-    #[test]
-    fn test_log_same() {
-        for z in (40..1000).map(|x| (x as f32)/10f32) {
-            for c in (4..100).map(|x| x as f32) {
-                let r1 = transform2(z,c);
-                let r2 = transform10(z,c);
-                println!("{} {}", r1, r2);
-                assert!((r1 - r2).abs() < 0.00001);
-            }
-        }
-    }
-
-}
