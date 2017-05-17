@@ -2,7 +2,29 @@
 extern crate std;
 use palette::{Rgb, Hsv, Hue};
 use palette::pixel::Srgb;
+use palette::blend::{Equations, Parameter};
+use palette::gradient::Gradient;
+use palette::Blend;
 use std::boxed::Box;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
+use std::f32::consts::PI;
+
+pub fn color_map_from_str(s: &str) -> Box<ColorMap> {
+    match s {
+        "hot" => Box::new(ColorMapHot{}),
+        "hsv" => Box::new(ColorMapHSV{}),
+        "cosine" => Box::new(ColorMap3dCosine{
+            a: [0.5, 0.5, 0.5],
+            b: [0.5, 0.5, 0.5],
+            d: [0.477, 0.573, 0.637],
+        }),
+        x if x.starts_with("mapfile:") => Box::new(ColorMapFromFile::new(&x[8..])),
+        x if x.starts_with("gpf:") => Box::new(ColorMapFromGPF::new(&x[4..])),
+        _ => panic!("unknown colormap"),
+    }
+}
 
 pub trait ColorMap {
     // x on range [0,1)
@@ -22,19 +44,6 @@ pub trait ColorMap {
         outbuf
     }
 
-}
-
-pub fn color_map_from_str(s: &str) -> Box<ColorMap> {
-    match s {
-        "hot" => Box::new(ColorMapHot{}),
-        "hsv" => Box::new(ColorMapHSV{}),
-        "cosine" => Box::new(ColorMap3dCosine{
-            a: [0.5, 0.5, 0.5],
-            b: [0.5, 0.5, 0.5],
-            d: [0.477, 0.573, 0.637],
-        }),
-        _ => Box::new(ColorMapHot{}),
-    }
 }
 
 pub struct ColorMapHSV {}
@@ -72,9 +81,72 @@ impl ColorMap for ColorMap3dCosine {
             let a = self.a[i];
             let b = self.b[i];
             let d = self.d[i];
-            pix[i] = 255f32 * (a + b * ((x + d)*2.0*std::f32::consts::PI).cos());
+            pix[i] = 255f32 * (a + b * ((x + d)*2.0*PI).cos());
         }
         (pix[0] as u8, pix[1] as u8, pix[2] as u8)
     }
 }
 
+pub struct ColorMapFromFile {
+    pub colors: Vec<(u8,u8,u8)>,
+}
+impl ColorMapFromFile {
+    fn new(filepath: &str) -> ColorMapFromFile {
+        let f = File::open(filepath).expect("failed to open colormap file");
+        let file = BufReader::new(&f);
+        let colors: Vec<(u8,u8,u8)> = file.lines()
+            .map(|line| {
+                let line = line.expect("failed to read colormap file");
+                let xs: Vec<_> = line.split_whitespace()
+                    .map(|x| x.parse().expect("failed to parse integer"))
+                    .collect();
+                (xs[0], xs[1], xs[2])
+            }).collect();
+        ColorMapFromFile {
+            colors: colors,
+        }
+    }
+}
+impl ColorMap for ColorMapFromFile {
+    fn colorize(&self, x: f32) -> (u8,u8,u8) {
+        let x = x * (self.colors.len() as f32 - 1.0);
+        let left: Rgb<f32>  = Rgb::from_pixel(&self.colors[x.floor() as usize]);
+        let right = Rgb::from_pixel(&self.colors[x.ceil()  as usize]);
+        let blend_mode = Equations::from_parameters(
+            Parameter::SourceAlpha,
+            Parameter::OneMinusSourceAlpha
+        );
+        left.blend(right, blend_mode).to_pixel()
+    }
+}
+
+
+pub struct ColorMapFromGPF {
+    pub gradient: Gradient<Rgb>,
+}
+impl ColorMapFromGPF {
+    fn new(filepath: &str) -> ColorMapFromGPF {
+        println!("{}", filepath);
+        let f = File::open(filepath).expect("failed to open colormap file");
+        let file = BufReader::new(&f);
+        let colors: Vec<(f32, Rgb<f32>)> = file.lines()
+            .map(|x| x.unwrap())
+            .filter(|line| !line.starts_with("#"))
+            .map(|line| {
+                let xs: Vec<f32> = line.split_whitespace()
+                    .map(|x| x.parse().expect("failed to parse float"))
+                    .collect();
+                (xs[0], Rgb::new(xs[1], xs[2], xs[3]))
+            }).collect();
+        ColorMapFromGPF {
+            gradient: Gradient::with_domain(colors),
+        }
+    }
+}
+impl ColorMap for ColorMapFromGPF {
+    fn colorize(&self, x: f32) -> (u8,u8,u8) {
+        let (xmin, xmax) = self.gradient.domain();
+        let x = xmin + (xmax - xmin)*x;
+        self.gradient.get(x).to_pixel()
+    }
+}

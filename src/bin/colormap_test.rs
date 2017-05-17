@@ -5,11 +5,16 @@ extern crate imagefmt;
 use fractals::colors::color_map_from_str;
 
 pub fn main() {
-    let cmaps = vec![
+    // skip program name
+    let args: Vec<_> = std::env::args().skip(1).collect();
+    let mut cmaps = vec![
         "hot",
         "hsv",
         "cosine",
     ];
+    for c in args.iter() {
+        cmaps.push(c);
+    }
     let wid = 80;
     let z = 800;
     let n = cmaps.len();
