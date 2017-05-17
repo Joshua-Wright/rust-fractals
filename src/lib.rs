@@ -87,8 +87,17 @@ pub fn normalize(xs: Vec<f32>, mul: f32, offset: f32) -> Vec<f32> {
                 let x = (x+1f32).log2();
                 let x = x * mul;
                 let x = x + offset;
-                // div by eps+1 to make sure it is in range [0,1), not [0,1]
-                let x = (0.5f32*(x * PI * 2f32).sin() + 0.5f32) / (1f32 + std::f32::EPSILON);
+                // // div by eps+1 to make sure it is in range [0,1), not [0,1]
+                // let x = (0.5f32*(x * PI * 2f32).sin() + 0.5f32) / (1f32 + std::f32::EPSILON);
+                // triangle waves look better than sine waves, because the colors aren't bunched
+                // together
+                // TODO: user-selectable waves just like colormaps
+                let x = x % (1f32 + std::f32::EPSILON);
+                let x = if x < 0.5 {
+                    2.0*x
+                } else {
+                    2.0 - 2.0*x
+                };
                 x
             }
         })

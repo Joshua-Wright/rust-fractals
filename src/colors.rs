@@ -1,4 +1,5 @@
 // colors.rs
+extern crate std;
 use palette::{Rgb, Hsv, Hue};
 use palette::pixel::Srgb;
 use std::boxed::Box;
@@ -30,8 +31,7 @@ pub fn color_map_from_str(s: &str) -> Box<ColorMap> {
         "cosine" => Box::new(ColorMap3dCosine{
             a: [0.5, 0.5, 0.5],
             b: [0.5, 0.5, 0.5],
-            c: [9.6, 9.6, 9.6],
-            d: [3.0, 3.6, 4.0],
+            d: [0.477, 0.573, 0.637],
         }),
         _ => Box::new(ColorMapHot{}),
     }
@@ -63,7 +63,6 @@ impl ColorMap for ColorMapHot {
 pub struct ColorMap3dCosine {
     pub a: [f32; 3],
     pub b: [f32; 3],
-    pub c: [f32; 3],
     pub d: [f32; 3],
 }
 impl ColorMap for ColorMap3dCosine {
@@ -72,9 +71,8 @@ impl ColorMap for ColorMap3dCosine {
         for i in 0..3 {
             let a = self.a[i];
             let b = self.b[i];
-            let c = self.c[i];
             let d = self.d[i];
-            pix[i] = 255f32 * (a + b * (c*x + d).cos());
+            pix[i] = 255f32 * (a + b * ((x + d)*2.0*std::f32::consts::PI).cos());
         }
         (pix[0] as u8, pix[1] as u8, pix[2] as u8)
     }
