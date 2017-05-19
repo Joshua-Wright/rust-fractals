@@ -37,7 +37,6 @@ fn main() {
              .help("imaginary value of center point")
              .default_value("0")
              .short("i")
-             .long("iter")
              )
         .arg(Arg::with_name("zoom")
              .help("zoom")

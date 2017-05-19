@@ -18,6 +18,8 @@ use std::io::prelude::*;
 
 use std::f32::consts::PI;
 
+use std::time::Instant;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FractalCfg {
     pub width: u32, pub height: u32,
@@ -123,6 +125,7 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
         }
     }
 
+    let time = Instant::now();
     let buf = if cfg.julia {
         julia(&cfg)
     } else {
@@ -130,6 +133,7 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
     };
 
     if !quiet {
+        println!("render time: {}", duration_str(time.elapsed()));
         println!("f32 max {:?}", buf.iter().cloned().fold(std::f32::NAN, f32::max));
         println!("f32 min {:?}", buf.iter().cloned().fold(std::f32::NAN, f32::min));
     }
@@ -139,17 +143,26 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
         binfile.write(&bincode::serialize(&buf, bincode::Infinite).unwrap())?;
     }
 
+    let time = Instant::now();
     let buf = normalize(buf, cfg.multiplier as f32, cfg.offset as f32);
     let buf = color_map_from_str(&cfg.colormap).colorize_buffer(buf);
 
     if !quiet {
+        println!("colorize+normalize time: {}", duration_str(time.elapsed()));
         println!("u8 max {:?}", buf.iter().cloned().max());
         println!("u8 min {:?}", buf.iter().cloned().min());
     }
     
+    let time = Instant::now();
     imagefmt::write(output, cfg.width as usize, cfg.height as usize, imagefmt::ColFmt::RGB, &buf, imagefmt::ColType::Auto).expect("error writing file");
+    if !quiet {
+        println!("png time: {}", duration_str(time.elapsed()));
+    }
 
     let mut outfile = File::create(metadata_file_path)?;
     outfile.write_all(&serde_json::to_vec_pretty(&cfg)?)
 }
 
+fn duration_str(d: std::time::Duration) -> String {
+    format!("{}", (d.as_secs() as f64) + (d.subsec_nanos() as f64) / 1e9f64)
+}

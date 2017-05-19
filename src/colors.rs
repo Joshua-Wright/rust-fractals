@@ -126,7 +126,6 @@ pub struct ColorMapFromGPF {
 }
 impl ColorMapFromGPF {
     fn new(filepath: &str) -> ColorMapFromGPF {
-        println!("{}", filepath);
         let f = File::open(filepath).expect("failed to open colormap file");
         let file = BufReader::new(&f);
         let colors: Vec<(f32, Rgb<f32>)> = file.lines()
