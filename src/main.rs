@@ -92,6 +92,11 @@ fn main() {
              .long("cmap")
              .default_value("hot")
              )
+        .arg(Arg::with_name("downsample")
+             .help("downsample result from 4x resolution")
+             .long("downsample")
+             .takes_value(false)
+             )
         .get_matches();
     
     let cfg = FractalCfg::from_matches(&matches);

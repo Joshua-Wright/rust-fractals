@@ -101,6 +101,11 @@ pub fn main() {
              .long("points")
              .takes_value(true)
              )
+        .arg(Arg::with_name("downsample")
+             .help("downsample result from 4x resolution")
+             .long("downsample")
+             .takes_value(false)
+             )
         .get_matches();
     
     let cfg      = FractalCfg { julia: true, .. FractalCfg::from_matches(&matches) };

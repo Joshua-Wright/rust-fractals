@@ -31,6 +31,7 @@ pub struct FractalCfg {
     pub julia: bool,
     pub offset: f64,
     pub colormap: String,
+    pub downsample: bool,
 }
 
 impl Default for FractalCfg {
@@ -45,6 +46,7 @@ impl Default for FractalCfg {
             julia: false,
             offset: 0f64,
             colormap: "hot".to_owned(),
+            downsample: false,
         }
     }
 }
@@ -69,6 +71,7 @@ impl FromMatches for FractalCfg {
             julia: matches.is_present("julia"),
             offset: value_t!(matches, "offset", f64).unwrap_or(d.offset),
             colormap: value_t!(matches, "colormap", String).unwrap_or(d.colormap),
+            downsample: matches.is_present("downsample"),
         }
     }
 }
@@ -126,10 +129,17 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
     }
 
     let time = Instant::now();
+    let cfg2 = if cfg.downsample {
+        FractalCfg {
+            width: cfg.width*2,
+            height: cfg.height*2,
+            .. cfg.clone()
+        }
+    } else {cfg.clone()};
     let buf = if cfg.julia {
-        julia(&cfg)
+        julia(&cfg2)
     } else {
-        mandelbrot(&cfg)
+        mandelbrot(&cfg2)
     };
 
     if !quiet {
@@ -146,6 +156,9 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
     let time = Instant::now();
     let buf = normalize(buf, cfg.multiplier as f32, cfg.offset as f32);
     let buf = color_map_from_str(&cfg.colormap).colorize_buffer(buf);
+    let buf = if cfg.downsample {
+        downsample((cfg.width*2) as usize, (cfg.height*2) as usize, buf)
+    } else {buf};
 
     if !quiet {
         println!("colorize+normalize time: {}", duration_str(time.elapsed()));
@@ -166,3 +179,24 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
 fn duration_str(d: std::time::Duration) -> String {
     format!("{}", (d.as_secs() as f64) + (d.subsec_nanos() as f64) / 1e9f64)
 }
+
+
+fn downsample(w: usize, h: usize, buf: Vec<u8>) -> Vec<u8> {
+    let w2 = w/2;
+    let h2 = h/2;
+    let mut buf2 = vec![0u8; 3*w2*h2];
+    for y in 0..h2 {
+        for x in 0..w2 {
+            for c in 0..3 {
+                buf2[(y*w2 + x)*3 + c] = ((
+                    (buf[(y*2*w+0 + x*2 + 0)*3 + c] as f32) +
+                    (buf[(y*2*w+0 + x*2 + 1)*3 + c] as f32) +
+                    (buf[(y*2*w+1 + x*2 + 0)*3 + c] as f32) +
+                    (buf[(y*2*w+1 + x*2 + 1)*3 + c] as f32)
+                ) / 4f32) as u8;
+            }
+        }
+    }
+    buf2
+}
+
