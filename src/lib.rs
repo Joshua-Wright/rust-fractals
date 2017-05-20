@@ -136,11 +136,7 @@ pub fn write_fractal(cfg: &FractalCfg, output: &str, write_bin: bool, quiet: boo
             .. cfg.clone()
         }
     } else {cfg.clone()};
-    let buf = if cfg.julia {
-        julia(&cfg2)
-    } else {
-        mandelbrot(&cfg2)
-    };
+    let buf = mandelbrot(&cfg2);
 
     if !quiet {
         println!("render time: {}", duration_str(time.elapsed()));
